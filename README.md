@@ -63,6 +63,51 @@ Google Trendsの値は、実検索回数ではなく、指定した条件内で0
 | 求人需要データ | e-Stat / 厚生労働省 職業安定業務統計 | IT系職業の求人需要推移を確認する |
 | 検索関心データ | Google Trends | エンジニア職種別の検索関心推移を確認する |
 
+
+## 使用技術・データ格納先
+
+### 初期版の構成
+
+| 項目 | 使用技術・ツール | 位置づけ |
+|---|---|---|
+| データ格納先 | BigQuery | `raw / staging / mart` を構築するDB |
+| SQL実装 | BigQuery SQL | データ整形・集計・mart作成・品質チェック |
+| 可視化 | Looker Studio | martテーブルをもとに可視化 |
+| 元データ管理 | CSV / Excel | Google Trends・e-Statの取得データをrawとして保存 |
+| Python | 初期版では使用しない | SQL版完成後に自動取得・ロード・検証用途で追加予定 |
+
+### BigQueryを使用する理由
+
+本プロジェクトは、外部データを収集し、`raw → staging → mart` の流れで整形・集計するELT寄りのポートフォリオです。
+
+そのため、初期版ではBigQueryをデータ格納先として使用し、BigQuery SQLでデータ整形・集計・mart作成を行います。
+
+```text
+CSV / Excel
+  ↓
+BigQuery raw
+  ↓
+BigQuery staging
+  ↓
+BigQuery mart
+  ↓
+Looker Studio
+```
+
+PostgreSQLやMySQLではなくBigQueryを採用する理由は、今回の主目的が業務システムDBの正規化設計ではなく、外部データを取り込み、分析・可視化用のデータマートを作成するELT処理の再現にあるためです。
+
+### Looker Studioを使用する理由
+
+可視化は、BigQueryのmartテーブルを参照しやすいLooker Studioを使用します。
+
+初期版では、可視化を作り込みすぎず、以下を確認できる最低限のダッシュボードを想定します。
+
+- e-Stat求人需要指標の年次推移
+- Google Trends職種別検索関心の年次推移
+- 検索関心と求人需要の比較用ビュー
+
+月次データはBigQuery上に保持しますが、Looker Studioでの基本可視化は年次集計したmartを使用します。
+
 ## 初期版で扱う分析・可視化
 
 ### 1. e-Stat / 厚生労働省 職業安定業務統計による求人需要推移
@@ -359,6 +404,9 @@ project/
 
 ### Phase 3：テーブル設計
 
+- [x] データ格納先をBigQueryに決定する
+- [x] 可視化ツールをLooker Studioに決定する
+- [ ] BigQueryのデータセット名を決める
 - [ ] rawテーブルを設計する
 - [ ] stagingテーブルを設計する
 - [ ] monthly martテーブルを設計する
@@ -418,16 +466,19 @@ project/
 
 ### 初期版
 
-- SQL中心
-- DB上でraw / staging / martを構築
-- 可視化は可能ならLooker Studio
+- データ格納先はBigQuery
+- SQLはBigQuery SQLを使用
+- BigQuery上で `raw / staging / mart` を構築
+- 可視化はLooker Studioを使用
+- 元データはCSV / Excelとして `data/raw/` に保存
+- Pythonは初期版では使用しない
 
 ### 拡張版
 
-- Pythonで外部データ取得
-- PythonでCSV整形
-- PythonでDBロード
-- pandasで検証・簡易可視化
+- Pythonで外部データ取得を自動化
+- PythonでCSV整形を自動化
+- PythonでBigQueryロードを自動化
+- pandasでmart検証・簡易可視化
 
 ## 注意点
 
@@ -439,5 +490,7 @@ project/
 - e-Statは2012-2022ファイルと2023-2025ファイルを連結して使う
 - 2022年は両ファイルに重複して含まれるため、2012-2022ファイル側を採用し、2023-2025ファイル側の2022年データは除外する
 - raw / stagingでは月次データを保持し、基本の比較・可視化では年次集計を使う
+- 初期版ではBigQuery上にraw / staging / martを作成する
+- Looker Studioでは基本的にyearly martを参照して可視化する
 - 求人需要と検索関心の関係は因果ではなく、傾向比較として扱う
 - 分析の深掘りより、データ取得・整形・集計工程の再現性を重視する
