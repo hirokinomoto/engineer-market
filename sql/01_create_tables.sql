@@ -16,7 +16,7 @@
 -- 0. データセット作成
 -- ============================================================
 
-CREATE SCHEMA IF NOT EXISTS `your_project_id.engineer_market`
+CREATE SCHEMA IF NOT EXISTS `engineer-market.engineer_market`
 OPTIONS (
   location = "asia-northeast1"
 );
@@ -38,7 +38,7 @@ OPTIONS (
 -- 1-1. Google Trends Group 1
 -- ------------------------------------------------------------
 
-CREATE OR REPLACE TABLE `your_project_id.engineer_market.raw_google_trends_group_01` (
+CREATE OR REPLACE TABLE `engineer-market.engineer_market.raw_google_trends_group_01` (
   month DATE OPTIONS(description = "月初日"),
   system_engineer INT64 OPTIONS(description = "システムエンジニアの検索関心指数"),
   it_engineer INT64 OPTIONS(description = "ITエンジニアの検索関心指数"),
@@ -58,7 +58,7 @@ OPTIONS (
 -- 1-2. Google Trends Group 2
 -- ------------------------------------------------------------
 
-CREATE OR REPLACE TABLE `your_project_id.engineer_market.raw_google_trends_group_02` (
+CREATE OR REPLACE TABLE `engineer-market.engineer_market.raw_google_trends_group_02` (
   month DATE OPTIONS(description = "月初日"),
   system_engineer INT64 OPTIONS(description = "システムエンジニアの検索関心指数"),
   infrastructure_engineer INT64 OPTIONS(description = "インフラエンジニアの検索関心指数"),
@@ -78,7 +78,7 @@ OPTIONS (
 -- 1-3. e-Stat 2012-2022
 -- ------------------------------------------------------------
 
-CREATE OR REPLACE TABLE `your_project_id.engineer_market.raw_estat_job_market_2012_2022` (
+CREATE OR REPLACE TABLE `engineer-market.engineer_market.raw_estat_job_market_2012_2022` (
   month DATE OPTIONS(description = "月初日"),
   occupation_name STRING OPTIONS(description = "職業分類名"),
   metric_name STRING OPTIONS(description = "指標名: 新規求人 / 有効求人 / 有効求人倍率"),
@@ -100,7 +100,7 @@ OPTIONS (
 -- 1-4. e-Stat 2023-2025
 -- ------------------------------------------------------------
 
-CREATE OR REPLACE TABLE `your_project_id.engineer_market.raw_estat_job_market_2023_2025` (
+CREATE OR REPLACE TABLE `engineer-market.engineer_market.raw_estat_job_market_2023_2025` (
   month DATE OPTIONS(description = "月初日"),
   occupation_name STRING OPTIONS(description = "職業分類名"),
   metric_name STRING OPTIONS(description = "指標名: 新規求人 / 有効求人 / 有効求人倍率"),
@@ -128,7 +128,7 @@ OPTIONS (
 -- 2-1. Google Trends KW master
 -- ------------------------------------------------------------
 
-CREATE OR REPLACE TABLE `your_project_id.engineer_market.mst_google_trends_keyword` (
+CREATE OR REPLACE TABLE `engineer-market.engineer_market.mst_google_trends_keyword` (
   keyword STRING OPTIONS(description = "Google Trendsで使用する検索KW"),
   role_category STRING OPTIONS(description = "職種カテゴリ"),
   keyword_type STRING OPTIONS(description = "KW種別。初期版ではrole_name"),
@@ -143,7 +143,7 @@ OPTIONS (
 -- 2-2. e-Stat metric master
 -- ------------------------------------------------------------
 
-CREATE OR REPLACE TABLE `your_project_id.engineer_market.mst_estat_metric` (
+CREATE OR REPLACE TABLE `engineer-market.engineer_market.mst_estat_metric` (
   metric_name STRING OPTIONS(description = "e-Stat指標名"),
   metric_label STRING OPTIONS(description = "表示用指標名"),
   unit STRING OPTIONS(description = "単位"),
@@ -170,7 +170,7 @@ OPTIONS (
 -- 3-1. Google Trends monthly staging
 -- ------------------------------------------------------------
 
-CREATE OR REPLACE TABLE `your_project_id.engineer_market.stg_google_trends_monthly` (
+CREATE OR REPLACE TABLE `engineer-market.engineer_market.stg_google_trends_monthly` (
   month DATE OPTIONS(description = "月初日"),
   keyword STRING OPTIONS(description = "検索KW"),
   trend_value INT64 OPTIONS(description = "Google Trends検索関心指数"),
@@ -190,7 +190,7 @@ OPTIONS (
 -- 3-2. Google Trends adjusted monthly staging
 -- ------------------------------------------------------------
 
-CREATE OR REPLACE TABLE `your_project_id.engineer_market.stg_google_trends_adjusted_monthly` (
+CREATE OR REPLACE TABLE `engineer-market.engineer_market.stg_google_trends_adjusted_monthly` (
   month DATE OPTIONS(description = "月初日"),
   keyword STRING OPTIONS(description = "検索KW"),
   source_group STRING OPTIONS(description = "取得グループ: group_01 / group_02"),
@@ -212,7 +212,7 @@ OPTIONS (
 -- 3-3. e-Stat monthly staging
 -- ------------------------------------------------------------
 
-CREATE OR REPLACE TABLE `your_project_id.engineer_market.stg_estat_job_market_monthly` (
+CREATE OR REPLACE TABLE `engineer-market.engineer_market.stg_estat_job_market_monthly` (
   month DATE OPTIONS(description = "月初日"),
   occupation_name STRING OPTIONS(description = "職業分類名"),
   metric_name STRING OPTIONS(description = "指標名"),
@@ -240,7 +240,7 @@ OPTIONS (
 -- 4-1. monthly mart
 -- ------------------------------------------------------------
 
-CREATE OR REPLACE TABLE `your_project_id.engineer_market.mart_engineer_market_monthly` (
+CREATE OR REPLACE TABLE `engineer-market.engineer_market.mart_engineer_market_monthly` (
   month DATE OPTIONS(description = "月初日"),
   year INT64 OPTIONS(description = "年"),
   data_source STRING OPTIONS(description = "データソース: google_trends / estat"),
@@ -262,7 +262,7 @@ OPTIONS (
 -- 4-2. yearly mart
 -- ------------------------------------------------------------
 
-CREATE OR REPLACE TABLE `your_project_id.engineer_market.mart_engineer_market_yearly` (
+CREATE OR REPLACE TABLE `engineer-market.engineer_market.mart_engineer_market_yearly` (
   year INT64 OPTIONS(description = "年"),
   data_source STRING OPTIONS(description = "データソース: google_trends / estat"),
   category STRING OPTIONS(description = "KW名または職業分類名"),
