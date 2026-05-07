@@ -6,11 +6,9 @@
 --   raw → staging → mart の各層に必要なテーブルを作成する。
 --
 -- 実行前提:
---   - BigQueryプロジェクトIDは自分の環境に合わせて置換する
---   - 例: `your_project_id.engineer_market.table_name`
---
--- 置換対象:
---   your_project_id
+--   - BigQueryプロジェクトID: engineer-market
+--   - データセット名: engineer_market
+--   - テーブル参照例: `engineer-market.engineer_market.table_name`
 
 -- ============================================================
 -- 0. データセット作成
