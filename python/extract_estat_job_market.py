@@ -12,7 +12,7 @@ INPUT_FILES = [
     {
         "path": BASE_DIR / "data" / "raw" / "estat" / "job_market_2012_2022.xlsx",
         "source_file": "2012_2022",
-        "start_month": date(2015, 1, 1),
+        "start_month": date(2013, 1, 1),
         "end_month": date(2022, 12, 1),
     },
     {
