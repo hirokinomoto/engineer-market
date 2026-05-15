@@ -3,12 +3,21 @@
 --
 -- 目的:
 --   Google Trendsの横持ちrawデータを縦持ち化し、
---   アンカーKW「システムエンジニア」を使ってグループ間補正を行う。
+--   アンカーKW「システムエンジニア」を使って職種KWのグループ間補正を行う。
 --
 -- 前提:
---   raw_google_trends_group_01 / group_02 には
---   2014-12-01〜2025-12-01 のデータが入っている可能性がある。
---   stagingでは 2015-01-01〜2025-12-01 のみを対象にする。
+--   raw_google_trends_group_01:
+--     trends_role_group_01_pg_it_web_2013_2025.csv
+--   raw_google_trends_group_02:
+--     trends_role_group_02_infra_data_ai_2013_2025.csv
+--   raw_google_trends_beginner_it_roles:
+--     trends_beginner_it_roles_2013_2025.csv
+--
+--   stagingでは 2013-01-01〜2025-12-01 のみを対象にする。
+--
+-- 補足:
+--   beginner_query は1グループ内の比較であり、group_01 / group_02 の
+--   アンカー補正対象ではない。そのため補正係数は 1.0 とする。
 
 -- ============================================================
 -- 1. raw → stg_google_trends_monthly
@@ -19,10 +28,11 @@ CREATE OR REPLACE TABLE `engineer-market.engineer_market.stg_google_trends_month
 WITH group_01 AS (
   SELECT
     month,
-    keyword,
+    keyword_master.keyword,
+    'role_name' AS keyword_type,
     trend_value,
     'group_01' AS source_group,
-    keyword = 'システムエンジニア' AS is_anchor
+    keyword_master.keyword = 'システムエンジニア' AS is_anchor
   FROM `engineer-market.engineer_market.raw_google_trends_group_01`
   UNPIVOT (
     trend_value FOR keyword_code IN (
@@ -39,16 +49,17 @@ WITH group_01 AS (
     STRUCT('web_engineer' AS keyword_code_map, 'Webエンジニア' AS keyword)
   ]) AS keyword_master
   WHERE keyword_code = keyword_master.keyword_code_map
-    AND month BETWEEN DATE '2015-01-01' AND DATE '2025-12-01'
+    AND month BETWEEN DATE '2013-01-01' AND DATE '2025-12-01'
 ),
 
 group_02 AS (
   SELECT
     month,
-    keyword,
+    keyword_master.keyword,
+    'role_name' AS keyword_type,
     trend_value,
     'group_02' AS source_group,
-    keyword = 'システムエンジニア' AS is_anchor
+    keyword_master.keyword = 'システムエンジニア' AS is_anchor
   FROM `engineer-market.engineer_market.raw_google_trends_group_02`
   UNPIVOT (
     trend_value FOR keyword_code IN (
@@ -65,12 +76,39 @@ group_02 AS (
     STRUCT('ai_engineer' AS keyword_code_map, 'AIエンジニア' AS keyword)
   ]) AS keyword_master
   WHERE keyword_code = keyword_master.keyword_code_map
-    AND month BETWEEN DATE '2015-01-01' AND DATE '2025-12-01'
+    AND month BETWEEN DATE '2013-01-01' AND DATE '2025-12-01'
+),
+
+beginner_it_roles AS (
+  SELECT
+    month,
+    keyword_master.keyword,
+    'beginner_query' AS keyword_type,
+    trend_value,
+    'beginner_it_roles' AS source_group,
+    FALSE AS is_anchor
+  FROM `engineer-market.engineer_market.raw_google_trends_beginner_it_roles`
+  UNPIVOT (
+    trend_value FOR keyword_code IN (
+      engineer_beginner,
+      programmer_beginner,
+      it_beginner
+    )
+  )
+  CROSS JOIN UNNEST([
+    STRUCT('engineer_beginner' AS keyword_code_map, 'エンジニア 未経験' AS keyword),
+    STRUCT('programmer_beginner' AS keyword_code_map, 'プログラマー 未経験' AS keyword),
+    STRUCT('it_beginner' AS keyword_code_map, 'IT 未経験' AS keyword)
+  ]) AS keyword_master
+  WHERE keyword_code = keyword_master.keyword_code_map
+    AND month BETWEEN DATE '2013-01-01' AND DATE '2025-12-01'
 )
 
 SELECT * FROM group_01
 UNION ALL
 SELECT * FROM group_02
+UNION ALL
+SELECT * FROM beginner_it_roles
 ;
 
 -- ============================================================
@@ -85,6 +123,8 @@ SELECT * FROM group_02
 --
 --   補正係数 = group_01のシステムエンジニア平均値
 --            / group_02のシステムエンジニア平均値
+--
+--   beginner_query は同一取得グループ内で比較するため、補正係数は 1.0 とする。
 
 CREATE OR REPLACE TABLE `engineer-market.engineer_market.stg_google_trends_adjusted_monthly` AS
 
@@ -93,7 +133,9 @@ WITH anchor_avg AS (
     source_group,
     AVG(trend_value) AS anchor_avg_value
   FROM `engineer-market.engineer_market.stg_google_trends_monthly`
-  WHERE keyword = 'システムエンジニア'
+  WHERE keyword_type = 'role_name'
+    AND keyword = 'システムエンジニア'
+    AND source_group IN ('group_01', 'group_02')
   GROUP BY source_group
 ),
 
@@ -112,15 +154,18 @@ adjusted AS (
   SELECT
     s.month,
     s.keyword,
+    s.keyword_type,
     s.source_group,
     CAST(s.trend_value AS FLOAT64) AS original_trend_value,
     CASE
       WHEN s.source_group = 'group_01' THEN CAST(s.trend_value AS FLOAT64)
       WHEN s.source_group = 'group_02' THEN CAST(s.trend_value AS FLOAT64) * a.group_02_adjustment_factor
+      WHEN s.source_group = 'beginner_it_roles' THEN CAST(s.trend_value AS FLOAT64)
     END AS adjusted_trend_value,
     CASE
       WHEN s.source_group = 'group_01' THEN 1.0
       WHEN s.source_group = 'group_02' THEN a.group_02_adjustment_factor
+      WHEN s.source_group = 'beginner_it_roles' THEN 1.0
     END AS adjustment_factor,
     s.is_anchor
   FROM `engineer-market.engineer_market.stg_google_trends_monthly` AS s
@@ -130,6 +175,7 @@ adjusted AS (
 SELECT
   month,
   keyword,
+  keyword_type,
   source_group,
   original_trend_value,
   adjusted_trend_value,
@@ -138,6 +184,7 @@ SELECT
 FROM adjusted
 WHERE NOT (
   source_group = 'group_02'
+  AND keyword_type = 'role_name'
   AND keyword = 'システムエンジニア'
 )
 ;

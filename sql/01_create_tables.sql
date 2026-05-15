@@ -11,6 +11,10 @@ OPTIONS (
   location = "asia-northeast1"
 );
 
+-- ============================================================
+-- raw tables: Google Trends
+-- ============================================================
+
 CREATE OR REPLACE TABLE `engineer-market.engineer_market.raw_google_trends_group_01` (
   month DATE OPTIONS(description = "月初日"),
   system_engineer INT64 OPTIONS(description = "システムエンジニアの検索関心指数"),
@@ -19,7 +23,7 @@ CREATE OR REPLACE TABLE `engineer-market.engineer_market.raw_google_trends_group
   web_engineer INT64 OPTIONS(description = "Webエンジニアの検索関心指数")
 )
 OPTIONS (
-  description = "Google Trends Group 1 raw table"
+  description = "Google Trends role group 01 raw table: system engineer / programmer / IT engineer / Web engineer"
 );
 
 CREATE OR REPLACE TABLE `engineer-market.engineer_market.raw_google_trends_group_02` (
@@ -30,8 +34,22 @@ CREATE OR REPLACE TABLE `engineer-market.engineer_market.raw_google_trends_group
   ai_engineer INT64 OPTIONS(description = "AIエンジニアの検索関心指数")
 )
 OPTIONS (
-  description = "Google Trends Group 2 raw table"
+  description = "Google Trends role group 02 raw table: system engineer / infrastructure engineer / data engineer / AI engineer"
 );
+
+CREATE OR REPLACE TABLE `engineer-market.engineer_market.raw_google_trends_beginner_it_roles` (
+  month DATE OPTIONS(description = "月初日"),
+  engineer_beginner INT64 OPTIONS(description = "エンジニア 未経験の検索関心指数"),
+  programmer_beginner INT64 OPTIONS(description = "プログラマー 未経験の検索関心指数"),
+  it_beginner INT64 OPTIONS(description = "IT 未経験の検索関心指数")
+)
+OPTIONS (
+  description = "Google Trends beginner IT role queries raw table"
+);
+
+-- ============================================================
+-- raw tables: e-Stat
+-- ============================================================
 
 CREATE OR REPLACE TABLE `engineer-market.engineer_market.raw_estat_job_market_2012_2022` (
   month DATE OPTIONS(description = "月初日"),
@@ -57,6 +75,10 @@ OPTIONS (
   description = "e-Stat 職業安定業務統計 2023-2025 raw table"
 );
 
+-- ============================================================
+-- master tables
+-- ============================================================
+
 CREATE OR REPLACE TABLE `engineer-market.engineer_market.mst_google_trends_keyword` (
   keyword STRING OPTIONS(description = "Google Trendsで使用する検索KW"),
   role_category STRING OPTIONS(description = "職種カテゴリ"),
@@ -78,9 +100,14 @@ OPTIONS (
   description = "e-Stat指標マスタ"
 );
 
+-- ============================================================
+-- staging tables
+-- ============================================================
+
 CREATE OR REPLACE TABLE `engineer-market.engineer_market.stg_google_trends_monthly` (
   month DATE OPTIONS(description = "月初日"),
   keyword STRING OPTIONS(description = "検索KW"),
+  keyword_type STRING OPTIONS(description = "KW種別: role_name / beginner_query"),
   trend_value INT64 OPTIONS(description = "Google Trends検索関心指数"),
   source_group STRING OPTIONS(description = "取得グループ"),
   is_anchor BOOL OPTIONS(description = "アンカーKWかどうか")
@@ -92,6 +119,7 @@ OPTIONS (
 CREATE OR REPLACE TABLE `engineer-market.engineer_market.stg_google_trends_adjusted_monthly` (
   month DATE OPTIONS(description = "月初日"),
   keyword STRING OPTIONS(description = "検索KW"),
+  keyword_type STRING OPTIONS(description = "KW種別: role_name / beginner_query"),
   source_group STRING OPTIONS(description = "取得グループ"),
   original_trend_value FLOAT64 OPTIONS(description = "補正前の検索関心指数"),
   adjusted_trend_value FLOAT64 OPTIONS(description = "補正後の検索関心指数"),
@@ -113,6 +141,10 @@ CREATE OR REPLACE TABLE `engineer-market.engineer_market.stg_estat_job_market_mo
 OPTIONS (
   description = "e-Stat monthly staging table"
 );
+
+-- ============================================================
+-- mart tables
+-- ============================================================
 
 CREATE OR REPLACE TABLE `engineer-market.engineer_market.mart_engineer_market_monthly` (
   month DATE OPTIONS(description = "月初日"),
